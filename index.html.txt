@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sayı Bulmaca Oyunu</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(8px);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        h1 { font-size: 24px; margin-bottom: 10px; }
+        p { font-size: 14px; color: #ddd; }
+        .stats {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 15px;
+            font-weight: bold;
+            color: #ffeb3b;
+        }
+        .input-group {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+        input {
+            padding: 12px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            width: 60%;
+            text-align: center;
+            outline: none;
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            background: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover { background: #e64a19; }
+        #log {
+            margin-top: 20px;
+            max-height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .log-item { margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 3px; }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <h1>Sayı Bulmaca</h1>
+    <p>4 basamaklı, rakamları farklı bir sayı tuttum. Tahmin et!</p>
+    
+    <div class="stats" id="statsText">Yükleniyor...</div>
+    
+    <div class="input-group">
+        <input type="text" id="tahminInput" maxlength="4" placeholder="4 hane" inputmode="numeric">
+        <button onclick="tahminEt()">Tahmin</button>
+    </div>
+
+    <div id="log"></div>
+</div>
+
+<script>
+    let olasiSayilar = [];
+    let gizliSayi = "";
+    let denemeSayisi = 0;
+
+    function tumOlasiSayilariUret() {
+        let sayilar = [];
+        for (let i = 1; i <= 9; i++) {
+            for (let j = 0; j <= 9; j++) {
+                if (j === i) continue;
+                for (let k = 0; k <= 9; k++) {
+                    if (k === i || k === j) continue;
+                    for (let l = 0; l <= 9; l++) {
+                        if (l === i || l === j || l === k) continue;
+                        sayilar.push(`${i}${j}${k}${l}`);
+                    }
+                }
+            }
+        }
+        return sayilar;
+    }
+
+    function ipucuHesapla(tahmin, hedef) {
+        let artilar = 0;
+        let eksiler = 0;
+        for (let i = 0; i < 4; i++) {
+            if (tahmin[i] === hedef[i]) {
+                artilar++;
+            } else if (hedef.includes(tahmin[i])) {
+                eksiler++;
+            }
+        }
+        return { artilar, eksiler };
+    }
+
+    function oyunuBaslat() {
+        olasiSayilar = tumOlasiSayilariUret();
+        gizliSayi = olasiSayilar[Math.floor(Math.random() * olasiSayilar.length)];
+        denemeSayisi = 0;
+        document.getElementById("log").innerHTML = "";
+        guncelleIstatistik();
+    }
+
+    function guncelleIstatistik() {
+        let kalan = olasiSayilar.length;
+        let oran = (1 / kalan) * 100;
+        let oranStr = oran < 1 ? oran.toFixed(2) : oran.toFixed(0);
+        document.getElementById("statsText").innerText = `Sıradaki tahminde bulma ihtimalin: %${oranStr}`;
+    }
+
+    function tahminEt() {
+        let input = document.getElementById("tahminInput");
+        let tahmin = input.value.trim();
+
+        if (tahmin.length !== 4 || isNaN(tahmin) || new Set(tahmin).size !== 4 || tahmin[0] === '0') {
+            alert("Lütfen 4 basamaklı, rakamları farklı ve 0 ile başlamayan bir sayı girin!");
+            return;
+        }
+
+        denemeSayisi++;
+        let { artilar, eksiler } = ipucuHesapla(tahmin, gizliSayi);
+        let logDiv = document.getElementById("log");
+
+        if (artilar === 4) {
+            logDiv.innerHTML = `<div class="log-item" style="color: #4CAF50; font-weight:bold;">Bingo! ${denemeSayisi}. denemede bildin! Sayı: ${gizliSayi}</div>` + logDiv.innerHTML;
+            alert(`Tebrikler! ${denemeSayisi}. denemede doğru bildiniz. Yeni oyun başlıyor!`);
+            oyunuBaslat();
+            input.value = "";
+            return;
+        }
+
+        olasiSayilar = olasiSayilar.filter(sayi => {
+            let p = ipucuHesapla(tahmin, sayi);
+            return p.artilar === artilar && p.eksiler === eksiler;
+        });
+
+        let sonucStr = "";
+        if (artilar > 0) sonucStr += `+${artilar} `;
+        if (eksiler > 0) sonucStr += `-${eksiler}`;
+        if (artilar === 0 && eksiler === 0) sonucStr = "0 (Hiçbir rakam yok)";
+
+        logDiv.innerHTML = `<div class="log-item"><b>${tahmin}</b> -> ${sonucStr.trim()}</div>` + logDiv.innerHTML;
+        input.value = "";
+        guncelleIstatistik();
+    }
+
+    window.onload = function() {
+        oyunuBaslat();
+    };
+</script>
+
+</body>
+</html>
